@@ -16,7 +16,7 @@ services:
     networks:
       - flowsint_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U flowsint"]
+      test: [ "CMD-SHELL", "pg_isready -U flowsint" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,7 +29,7 @@ services:
     networks:
       - flowsint_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -66,6 +66,7 @@ services:
       dockerfile: flowsint-api/Dockerfile
       target: dev
     container_name: flowsint-api-dev
+    user: "1001:1001"
     restart: unless-stopped
     ports:
       - "5001:5001"
@@ -92,7 +93,7 @@ services:
       neo4j:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:5001/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -105,6 +106,7 @@ services:
       dockerfile: flowsint-api/Dockerfile
       target: dev
     container_name: flowsint-celery-dev
+    user: "1001:1001"
     restart: unless-stopped
     command: celery -A flowsint_core.core.celery worker --loglevel=info --pool=threads --concurrency=10
     volumes:

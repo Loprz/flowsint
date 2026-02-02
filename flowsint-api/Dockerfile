@@ -53,6 +53,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user
+RUN groupadd -g 1001 flowsint && \
+    useradd -u 1001 -g flowsint -s /bin/bash -m flowsint
+
 WORKDIR /app
 
 # Copy virtual environment from builder

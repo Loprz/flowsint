@@ -11,6 +11,16 @@ export type LocationPoint = {
   lon?: number
   address?: string
   label?: string
+  isOrigin?: boolean
+  isDestination?: boolean
+  geometry?: string  // WKT geometry for polygon rendering
+  nodeType?: string  // building, place, location, etc.
+}
+
+export type RouteData = {
+  coordinates: [number, number][] // [[lat, lon], ...]
+  distanceM?: number
+  color?: string
 }
 
 type MapFromAddressProps = {
@@ -18,13 +28,15 @@ type MapFromAddressProps = {
   height?: string
   zoom?: number
   centerOnFirst?: boolean
+  route?: RouteData
 }
 
 export const MapFromAddress: React.FC<MapFromAddressProps> = ({
   locations,
   height = '400px',
   zoom = 15,
-  centerOnFirst = true
+  centerOnFirst = true,
+  route
 }) => {
   // Get locations that need geocoding
   const locationsToGeocode = locations.filter(
@@ -129,11 +141,46 @@ export const MapFromAddress: React.FC<MapFromAddressProps> = ({
     }).addTo(map)
 
     // Add markers for each location
+    // Add markers for each location
     const markers: L.Marker[] = []
+
+    // Helper to create colored marker icon
+    const createMarkerIcon = (color: string) => L.divIcon({
+      html: `
+        <div style="
+          background-color: ${color};
+          width: 24px;
+          height: 24px;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        "></div>
+      `,
+      className: 'custom-marker',
+      iconSize: [24, 24],
+      iconAnchor: [12, 24],
+      popupAnchor: [0, -24]
+    })
+
     processedLocations.forEach((location) => {
       if (!location.coordinates) return
 
-      const marker = L.marker([location.coordinates.lat, location.coordinates.lon], { icon: customIcon }).addTo(map)
+      let icon = customIcon
+      let zIndexOffset = 0
+
+      if (location.isOrigin) {
+        icon = createMarkerIcon('#22c55e') // Green-500
+        zIndexOffset = 1000 // Ensure on top
+      } else if (location.isDestination) {
+        icon = createMarkerIcon('#ef4444') // Red-500
+        zIndexOffset = 1000 // Ensure on top
+      }
+
+      const marker = L.marker([location.coordinates.lat, location.coordinates.lon], {
+        icon,
+        zIndexOffset
+      }).addTo(map)
 
       // Create popup text
       const popupText =
@@ -144,6 +191,58 @@ export const MapFromAddress: React.FC<MapFromAddressProps> = ({
       marker.bindPopup(popupText)
       markers.push(marker)
     })
+
+    // Add building footprint polygons for nodes with geometry
+    processedLocations.forEach((location) => {
+      if (!location.geometry || location.nodeType !== 'building') return
+
+      try {
+        // Parse WKT geometry to GeoJSON-like coords
+        // WKT POLYGON format: POLYGON ((lon lat, lon lat, ...))
+        const wkt = location.geometry
+        const coordMatch = wkt.match(/POLYGON\s*\(\((.*?)\)\)/i)
+        if (!coordMatch) return
+
+        const coordPairs = coordMatch[1].split(',').map(pair => {
+          const [lon, lat] = pair.trim().split(/\s+/).map(Number)
+          return [lat, lon] as [number, number]  // Leaflet uses [lat, lon]
+        })
+
+        if (coordPairs.length < 3) return
+
+        const polygon = L.polygon(coordPairs, {
+          color: theme === 'dark' ? '#f59e0b' : '#d97706',  // Amber color
+          fillColor: theme === 'dark' ? '#f59e0b' : '#d97706',
+          fillOpacity: 0.3,
+          weight: 2
+        }).addTo(map)
+
+        const popupText = location.label || 'Building'
+        polygon.bindPopup(popupText)
+      } catch (e) {
+        console.warn('Failed to parse building geometry:', e)
+      }
+    })
+
+    // Add route polyline if provided
+    if (route && route.coordinates && route.coordinates.length > 1) {
+      const routeColor = route.color || (theme === 'dark' ? '#ef4444' : '#dc2626')
+      const polyline = L.polyline(route.coordinates, {
+        color: routeColor,
+        weight: 5,
+        opacity: 0.8,
+        lineJoin: 'round'
+      }).addTo(map)
+
+      // Add distance popup on the polyline
+      if (route.distanceM) {
+        const distanceKm = (route.distanceM / 1000).toFixed(2)
+        polyline.bindPopup(`Route: ${distanceKm} km`)
+      }
+
+      // Fit bounds to include the route
+      map.fitBounds(polyline.getBounds().pad(0.1))
+    }
 
     // Set map view
     if (centerOnFirst && validCoordinates.length > 0) {

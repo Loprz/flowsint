@@ -1,5 +1,5 @@
-from typing import Dict, List, Optional, Self
-from pydantic import Field, HttpUrl, model_validator
+from typing import Any, Dict, List, Optional, Self
+from pydantic import Field, HttpUrl, field_validator, model_validator
 import re
 from .domain import Domain
 from .flowsint_base import FlowsintType
@@ -9,6 +9,26 @@ from .registry import flowsint_type
 @flowsint_type
 class Website(FlowsintType):
     """Represents a website with its URL, domain, and redirect information."""
+
+    @field_validator("domain", mode="before")
+    @classmethod
+    def coerce_domain(cls, v: Any) -> Optional[Domain]:
+        """Convert string domain values to Domain instances."""
+        if v is None:
+            return None
+        if isinstance(v, Domain):
+            return v
+        if isinstance(v, dict):
+            return Domain(**v)
+        if isinstance(v, str):
+            # Extract domain from URL if it's a full URL
+            domain_str = v
+            if "://" in v:
+                from urllib.parse import urlparse
+                parsed = urlparse(v)
+                domain_str = parsed.hostname or v
+            return Domain(domain=domain_str)
+        return v
 
     url: HttpUrl = Field(
         ...,

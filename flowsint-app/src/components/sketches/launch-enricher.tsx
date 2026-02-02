@@ -33,6 +33,7 @@ const LaunchEnricherOrFlowPanel = memo(
     const [isOpen, setIsOpen] = useState(false)
     const [selectedEnricher, setSelectedEnricher] = useState<Enricher | Flow | null>(null)
     const [activeTab, setActiveTab] = useState('enrichers')
+    const [params, setParams] = useState<Record<string, any>>({})
     const [enrichersSearchQuery, setEnrichersSearchQuery] = useState('')
     const [flowsSearchQuery, setFlowsSearchQuery] = useState('')
 
@@ -68,8 +69,19 @@ const LaunchEnricherOrFlowPanel = memo(
       setIsOpen(false)
     }, [])
 
-    const handleSelectEnricher = useCallback((enricher: Enricher | Flow) => {
-      setSelectedEnricher(enricher)
+    const handleSelectEnricher = useCallback((item: Enricher | Flow) => {
+      setSelectedEnricher(item)
+      if (item && 'params_schema' in item && item.params_schema) {
+        const initialParams: Record<string, any> = {}
+        item.params_schema.forEach(p => {
+          if (p.default !== undefined) {
+            initialParams[p.name] = p.default
+          }
+        })
+        setParams(initialParams)
+      } else {
+        setParams({})
+      }
     }, [])
 
     const handleLaunchPanel = useCallback(() => {
@@ -77,14 +89,14 @@ const LaunchEnricherOrFlowPanel = memo(
         // Check if it's an Enricher or Flow based on the active tab
         if (activeTab === 'enrichers') {
           // For enrichers, use name
-          launchEnricher(values, (selectedEnricher as Enricher).name, sketch_id)
+          launchEnricher(values, (selectedEnricher as Enricher).name, sketch_id, params)
         } else {
           // For flows, use id
           launchFlow(values, (selectedEnricher as Flow).id, sketch_id)
         }
         handleCloseModal()
       }
-    }, [selectedEnricher, activeTab, launchEnricher, launchFlow, values, sketch_id])
+    }, [selectedEnricher, activeTab, launchEnricher, launchFlow, values, sketch_id, params])
 
     if (disabled) return (
       <>{children}</>
@@ -199,6 +211,47 @@ const LaunchEnricherOrFlowPanel = memo(
                                   {enricher.description || 'No description available'}
                                 </CardDescription>
                               )}
+
+                              {selectedEnricher &&
+                                'name' in selectedEnricher &&
+                                selectedEnricher.name === enricher.name &&
+                                enricher.params_schema &&
+                                enricher.params_schema.length > 0 && (
+                                  <div className="pl-7 pt-4 space-y-4 border-t border-border mt-4">
+                                    <h4 className="text-sm font-medium">Parameters</h4>
+                                    {enricher.params_schema.map(param => (
+                                      <div key={param.name} className="space-y-1.5">
+                                        <label
+                                          htmlFor={param.name}
+                                          className="text-xs font-medium text-muted-foreground"
+                                        >
+                                          {param.name} {param.required && <span className="text-destructive">*</span>}
+                                        </label>
+                                        <Input
+                                          id={param.name}
+                                          type={param.type === 'number' ? 'number' : 'text'}
+                                          placeholder={param.description}
+                                          value={params[param.name] ?? ''}
+                                          onChange={e =>
+                                            setParams(prev => ({
+                                              ...prev,
+                                              [param.name]:
+                                                param.type === 'number'
+                                                  ? parseFloat(e.target.value)
+                                                  : e.target.value
+                                            }))
+                                          }
+                                          className="h-8 text-xs"
+                                        />
+                                        {param.description && (
+                                          <p className="text-[10px] text-muted-foreground">
+                                            {param.description}
+                                          </p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                             </div>
                           </CardHeader>
                         </Card>

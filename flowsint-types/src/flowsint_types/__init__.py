@@ -16,10 +16,12 @@ from .alias import Alias
 from .asn import ASN
 from .bank_account import BankAccount
 from .breach import Breach
+from .building import Building
 from .cidr import CIDR
 from .credential import Credential
 from .credit_card import CreditCard
 from .device import Device
+from .division import Division
 from .dns_record import DNSRecord
 from .document import Document
 from .domain import Domain
@@ -28,6 +30,7 @@ from .file import File
 from .flowsint_base import FlowsintType
 from .gravatar import Gravatar
 from .individual import Individual
+from .intersection import Intersection
 from .ip import Ip
 from .leak import Leak
 from .malware import Malware
@@ -35,10 +38,12 @@ from .message import Message
 from .organization import Organization
 from .phone import Phone
 from .phrase import Phrase
+from .place import Place
 from .port import Port
 from .registry import TYPE_REGISTRY, flowsint_type, get_type, load_all_types
 from .reputation_score import ReputationScore
 from .risk_profile import RiskProfile
+from .road_segment import RoadSegment
 from .script import Script
 from .session import Session
 from .social_account import SocialAccount
@@ -73,6 +78,7 @@ __all__ = [
     "File",
     "Gravatar",
     "Individual",
+    "Intersection",
     "Ip",
     "Leak",
     "Malware",
@@ -80,9 +86,11 @@ __all__ = [
     "Organization",
     "Phone",
     "Phrase",
+    "Place",
     "Port",
     "ReputationScore",
     "RiskProfile",
+    "RoadSegment",
     "Script",
     "Session",
     "SocialAccount",
@@ -127,6 +135,7 @@ TYPE_TO_MODEL: Dict[str, Type[BaseModel]] = {
     "website": Website,
     "port": Port,
     "phrase": Phrase,
+    "place": Place,
     "breach": Breach,
     "credential": Credential,
     "device": Device,

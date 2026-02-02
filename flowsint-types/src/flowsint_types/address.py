@@ -9,9 +9,14 @@ class Location(FlowsintType):
     """Represents a physical address with geographical coordinates."""
 
     address: str = Field(..., description="Street address", title="Street Address", json_schema_extra={"primary": True})
-    city: str = Field(..., description="City name", title="City")
-    country: str = Field(..., description="Country name", title="Country")
-    zip: str = Field(..., description="ZIP or postal code", title="ZIP/Postal Code")
+    gers_id: Optional[str] = Field(
+        None,
+        description="Global Entity Reference System ID",
+        title="GERS ID",
+    )
+    city: Optional[str] = Field(None, description="City name", title="City")
+    country: Optional[str] = Field(None, description="Country name", title="Country")
+    zip: Optional[str] = Field(None, description="ZIP or postal code", title="ZIP/Postal Code")
     latitude: Optional[float] = Field(
         None, description="Latitude coordinate of the address", title="Latitude"
     )
@@ -21,7 +26,8 @@ class Location(FlowsintType):
 
     @model_validator(mode="after")
     def compute_label(self) -> Self:
-        self.nodeLabel = f"{self.address}, {self.city}, {self.country}"
+        if not self.nodeLabel:
+            self.nodeLabel = self.address
         return self
 
     @classmethod

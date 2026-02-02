@@ -107,6 +107,7 @@ class Neo4jGraphRepository:
     ) -> Tuple[str, Dict[str, Any]]:
         node_label = node_obj.get("nodeLabel")
         node_type = node_obj.get("nodeType")
+        gers_id = node_obj.get("nodeProperties.gers_id") or node_obj.get("gers_id")
 
         # paramètres Neo4j
         params = {
@@ -116,12 +117,23 @@ class Neo4jGraphRepository:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        query = f"""
-        MERGE (n:{node_type} {{ nodeLabel: $node_label, sketch_id: $sketch_id }})
-        ON CREATE SET n.created_at = $created_at
-        SET n += $props
-        RETURN elementId(n) AS id
-        """
+        if gers_id:
+            # Prioritize GERS ID for deduplication
+            params["gers_id"] = gers_id
+            query = f"""
+            MERGE (n:{node_type} {{ gers_id: $gers_id, sketch_id: $sketch_id }})
+            ON CREATE SET n.created_at = $created_at
+            SET n += $props
+            RETURN elementId(n) AS id
+            """
+        else:
+            # Fallback to nodeLabel
+            query = f"""
+            MERGE (n:{node_type} {{ nodeLabel: $node_label, sketch_id: $sketch_id }})
+            ON CREATE SET n.created_at = $created_at
+            SET n += $props
+            RETURN elementId(n) AS id
+            """
 
         return query, params
 

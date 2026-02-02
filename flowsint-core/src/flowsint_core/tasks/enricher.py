@@ -25,6 +25,7 @@ def run_enricher(
     serialized_objects: List[dict],
     sketch_id: str | None,
     owner_id: Optional[str] = None,
+    params: Optional[dict] = None,
 ):
     session = SessionLocal()
 
@@ -58,6 +59,7 @@ def run_enricher(
             sketch_id=sketch_id,
             scan_id=scan_id,
             vault=vault,
+            params=params,
         )
 
         # Deserialize objects back into Pydantic models

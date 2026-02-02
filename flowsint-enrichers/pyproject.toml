@@ -27,6 +27,7 @@ recontrack = { git = "https://github.com/reconurge/recontrack.git" }
 reconcrawl = { git = "https://github.com/reconurge/reconcrawl.git" }
 reconspread = { git = "https://github.com/reconurge/reconspread.git" }
 dnspython = "^2.4"
+overturemaps = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"

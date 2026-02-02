@@ -36,6 +36,7 @@ class StepSimulationRequest(BaseModel):
 class launchEnricherPayload(BaseModel):
     node_ids: List[str]
     sketch_id: str
+    params: Optional[dict] = None
 
 
 router = APIRouter()
@@ -91,6 +92,7 @@ async def launch_enricher(
                 entities,
                 payload.sketch_id,
                 str(current_user.id),
+                payload.params,
             ],
         )
         return {"id": task.id}
